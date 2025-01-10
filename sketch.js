@@ -46,7 +46,7 @@ function draw() {
 
   scale(.07)
   let DEC = dec_deg() // Chamada da funcao dec_deg
-  let RA_deg = ra_deg() // Chamada da funcao ra_deg
+  let AH_deg = ah_deg() // Chamada da funcao ra_deg
 
   fill(45, 128, 217) // Atribui cor ao modelo
   stroke(1)
@@ -54,7 +54,7 @@ function draw() {
   rotateX(-202.53 * PI / 180) // Soma-se 22.53 graus (Latitude)
   model(base)
 
-  rotateZ(-RA_deg * PI / 180) // Aqui configura o valor do Eixo RA
+  rotateZ(-AH_deg * PI / 180) // Aqui configura o valor do Eixo RA
   translate(0, 0, 2397) //Coincidir os pivos da base e do eixo
   model(eixo)
 
@@ -66,7 +66,7 @@ function draw() {
 }
 
 // Funcao que quebra a string e converte para graus
-function ra_deg() {
+function ah_deg() {
   ra_result = float(abs(ah.split(" ")[0] * 15)) + float(ah.split(" ")[1] / 60 * 15) + float(ah.split(" ")[2] / 3600 * 15)
 
   if (ah.split(" ")[0] + 0.5 < 0) { // Detecta valor negativo
