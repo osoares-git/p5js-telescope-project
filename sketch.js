@@ -25,7 +25,7 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL)
   textFont(inconsolata)
-  textSize(height / 35)
+  textSize(height / 45)
   textAlign(CENTER, CENTER)
 }
 
@@ -39,35 +39,37 @@ function draw() {
     dec = data['dec']
     date = data['date']
   }
+  
+  latitude = -22.5344 // latitude do telescopio PE160
+
+  AzElev = getAzimuthElevation(ah_decimal(), dec_decimal(), latitude) 
 
   fill(150, 0, 100) // Atribui cor ao letreiro
-  text('\nPE160\n' + 'Date:' + date + '\n' + 'Hour:' + hour + '\n\n' + 'AH:' + ah + '\n' + 'DEC:' + dec + '\n', -260, 100)
+  text('\nPE160\n' + 'Date:' + date + '\n' + 'Hour:' + hour + '\n\n' + 'AH:' + ah + '\n' + 'DEC:' + dec + '\n\n'+"AZ:"+ AzElev.azimuth+ '\n'+"ALT:"+ AzElev.elevation+ '\n' , -260, 100)
   noFill()
 
-  scale(.07)
-  let DEC = dec_deg() // Chamada da funcao dec_deg
-  let AH_deg = ah_deg() // Chamada da funcao ra_deg
-
+  scale(.06)  
   fill(45, 128, 217) // Atribui cor ao modelo
   stroke(1)
   rotateY(-150 * PI / 180) // Gira o conjunto
-  rotateX(-202.53 * PI / 180) // Soma-se 22.53 graus (Latitude)
+  
+  rotateX((latitude-180) * PI / 180) // Correcao do pivo
   model(base)
 
-  rotateZ(-AH_deg * PI / 180) // Aqui configura o valor do Eixo RA
+  rotateZ(-ah_decimal()*15 * PI / 180) // Aqui configura o valor do Eixo RA
   translate(0, 0, 2397) //Coincidir os pivos da base e do eixo
   model(eixo)
 
   translate(-508, 0, 0) //Coincidir os pivos do eixo e do tubo
-  rotateX(22.53 * PI / 180)  // Aqui configura a Latitude
-  rotateX(-1 * (DEC + 22.53) * PI / 180)  // Configura o valor do DEC
+  rotateX(latitude * PI / 180)  // Correcao do pivo
+  rotateX(-1 * (dec_decimal()) * PI / 180)  // Configura o valor do DEC
   fill(255, 255, 255)// Atribui cor ao modelo
   model(tubo)
 }
 
 // Funcao que quebra a string e converte para graus
-function ah_deg() {
-  ra_result = float(abs(ah.split(" ")[0] * 15)) + float(ah.split(" ")[1] / 60 * 15) + float(ah.split(" ")[2] / 3600 * 15)
+function ah_decimal() {
+  ra_result = float(abs(ah.split(" ")[0])) + float(ah.split(" ")[1] / 60) + float(ah.split(" ")[2] / 3600)
 
   if (ah.split(" ")[0] + 0.5 < 0) { // Detecta valor negativo
     ra_result = -ra_result
@@ -76,17 +78,46 @@ function ah_deg() {
 }
 
 // Funcao que quebra a string e converte para graus
-function dec_deg() {
+function dec_decimal() {
   dec_result = float(abs(dec.split(" ")[0])) + float(dec.split(" ")[1] / 60) + float(dec.split(" ")[2] / 3600)
 
   if (dec.split(" ")[0] < 0) {
     dec_result = -dec_result
-  }
-  dec_result = dec_result + 22.53
+  } 
   return dec_result
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+}
+
+
+function getAzimuthElevation(ha, dec, latitude) {
+  // Constantes de conversão
+  const DEG2RAD = Math.PI / 180;
+  const RAD2DEG = 180 / Math.PI;
+
+  const H = ha*15; //Converte ah_decimal em graus
+
+  // Cálculo da elevação
+  const sinElevation = (Math.sin(dec * DEG2RAD) * Math.sin(latitude * DEG2RAD)) +
+                      (Math.cos(dec * DEG2RAD) * Math.cos(latitude * DEG2RAD) * Math.cos(H * DEG2RAD));
+  let elevation = Math.asin(sinElevation) * RAD2DEG; // Altura em graus
+  elevation = Math.round(elevation * 100) / 100; // Arredondamento para 2 casas decimais
+
+  // Cálculo do azimute
+  const cotgAzimute = Math.sin(latitude * DEG2RAD)*(1/Math.tan(H * DEG2RAD)) -  (( Math.cos(latitude * DEG2RAD) * Math.tan(dec * DEG2RAD)) / Math.sin(H * DEG2RAD))
+   
+  let azimuth = Math.atan2(1, cotgAzimute) * RAD2DEG;
+
+  // Correcao do azimute dependendo do sinal de H
+  if (H < 0){
+    azimuth =  Math.round((azimuth)*100)/100 // Arredondamento
+  }
+  else{
+    azimuth = Math.round((azimuth+180)*100) / 100 // Correcao do lado e Arredondamento
+  }
+  
+  return {azimuth, elevation};
 }
 
